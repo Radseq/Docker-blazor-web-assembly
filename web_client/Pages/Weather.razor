@@ -1,0 +1,83 @@
+﻿@page "/weather"
+
+@inject HttpClient Http
+
+@inject IHttpService httpService
+@inject IPostService PostService
+@using System.Text.Json
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather forecast</h1>
+<p>SERVER_HOST: @Http.BaseAddress.ToString()</p>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+<EditForm Model="@post" OnSubmit="OnSubmit">
+    <div class="row ps-4 pe-4 me-3">
+        <div class="col">
+            <div class="input-group input-group-sm mb-3">
+                <span class="input-group-text col-5">Title</span>
+                <InputText @bind-Value="post.Title" class="form-control" />
+            </div>
+            <div class="input-group input-group-sm mb-3">
+                <span class="input-group-text col-5">Content</span>
+                <InputText @bind-Value="post.Content" class="form-control" />
+            </div>
+            <button type="submit">Submit</button>
+        </div>
+    </div>
+</EditForm>
+
+@if (forecasts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Temp. (C)</th>
+                <th>Temp. (F)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in forecasts)
+            {
+                <tr>
+                    <td>@forecast.Id</td>
+                    <td>@forecast.Title</td>
+                    <td>@forecast.Content</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private Post post = new Post();
+
+    private IList<Post>? forecasts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        forecasts = await PostService.GetAll();
+    }
+
+    private async Task OnSubmit()
+    {
+        try
+        {
+            var a = await PostService.Create(post);
+            Console.WriteLine("after create int result = " + a);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+}

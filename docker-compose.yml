@@ -1,0 +1,117 @@
+version: '3.4'
+
+services:
+  test_api:
+    image: test_api/test_api
+    build:
+      context: .
+      dockerfile: test_api/Dockerfile
+   # environment:
+   #  - ASPNETCORE_Kestrel__Certificates__Default__Password=Pass@radek
+   #  - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/api.pfx
+   # volumes:
+    # - ~/.aspnet/https:/https:ro
+    #environment:
+    #   - ASPNETCORE_ENVIRONMENT=Development
+    #   - ASPNETCORE_HTTP_PORTS=5000
+    #   #- ASPNETCORE_HTTPS_PORTS=5001
+    #ports:
+    #   - "5000:5000"
+    #   #- "5001"
+    # volumes:
+    #    - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+    #    - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+    #    #- C:\Users\admin\Desktop\test_api\test_api\bin\Debug\net8.0:/app:ro
+    container_name: api
+    depends_on:
+      - keycloak
+      - mariadb
+    networks:
+      test_network:
+        ipv4_address: 172.18.0.2  # Specify the desired IP address
+  web_client:
+    image: web_client/web_client
+    build:
+      context: .
+      dockerfile: web_client/Dockerfile
+   # environment:
+    # - ASPNETCORE_Kestrel__Certificates__Default__Password=Pass@radek
+    # - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/app.pfx
+     #environment:
+     #  - ASPNETCORE_ENVIRONMENT=Development
+     #  - ASPNETCORE_HTTP_PORTS=80
+     #  #- ASPNETCORE_HTTPS_PORTS=443
+     #ports:
+     #  - "80:80"
+     #  #- "443"
+    #volumes:
+     #- ~/.aspnet/https:/https:ro
+     #  - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+     #  - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+
+    depends_on:
+      - test_api
+    container_name: app 
+    networks:
+      test_network:
+        ipv4_address: 172.18.0.3  # Specify the desired IP address
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keyclock 
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command:
+      [
+        'start-dev'
+      ]
+    ports:
+      - 8080:8080
+    volumes:
+      - key_cloak:/opt/keycloak/data/
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      test_network:
+        ipv4_address: 172.18.0.4  # Specify the desired IP address
+  # nginx:
+  #   image: reverse_proxsy/nginx
+  #   container_name: nginx
+  #   build:
+  #     context: .
+  #     dockerfile: reverse_proxsy/Dockerfile
+  #   ports:
+  #     - "80:80"
+  #   networks:
+  #     test_network:
+  #       ipv4_address: 172.18.0.5  # Specify the desired IP address
+  mariadb:
+    image: mariadb
+    container_name: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: test_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    ports:
+      - "3306:3306"
+    networks:
+      test_network:
+        ipv4_address: 172.18.0.6  # Specify the desired IP address
+    volumes:
+      - mariadb_data:/var/lib/mysql
+  
+networks:
+  test_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16
+
+volumes:
+  mariadb_data:
+    driver: local
+  key_cloak:
+    driver: local
